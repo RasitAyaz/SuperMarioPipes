@@ -1,12 +1,9 @@
 // Ahmet Emirhan Bakkal
 // Muhammed Raşit Ayaz
 
+@SuppressWarnings("WeakerAccess, unused")
 public class Tile {
-    private int x;
-    private int y;
-    private int type;
-    private int entranceOne;
-    private int entranceTwo;
+    private int x, y, type, entranceOne, entranceTwo;
 
     public Tile(int x, int y, int type, int entranceOne, int entranceTwo) {
         this.x = x;

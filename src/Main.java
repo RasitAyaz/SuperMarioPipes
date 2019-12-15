@@ -21,31 +21,48 @@ import javafx.util.Duration;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 // Ahmet Emirhan Bakkal
 // Muhammed Raşit Ayaz
 
+@SuppressWarnings("WeakerAccess")
 public class Main extends Application {
-    private static double stageWidth = 800;
-    private static double stageHeight = 600;
+    private double stageWidth, stageHeight;
 
-    private static boolean musicOn = true;
-    private static boolean audioOn = true;
-    private static MediaPlayer bgmPlayer;
-    private static MediaPlayer sfxPlayer;
-    private static MediaPlayer ringPlayer;
+    private boolean musicOn, audioOn;
+    private MediaPlayer bgmPlayer, sfxPlayer, ringPlayer;
 
-    private static Text txtStatus;
-    private static Button btNextLv;
+    private Text txtStatus;
+    private Button btNextLv;
 
-    private static PathTransition pathTransition;
+    private ImageView audioOnView, audioOffView, musicOnView, musicOffView;
+
+    private PathTransition pathTransition;
+
+    private StageControl stageControl;
+    private TileControl tileControl;
 
     public static void main(String[] args) {
         launch(args);
     }
 
+    public Main() {
+        stageControl = new StageControl();
+        tileControl = new TileControl();
+
+        stageControl.connect(this);
+        tileControl.connect(this);
+    }
+
+    @Override
     public void start(Stage stage) throws Exception {
+        musicOn = true;
+        audioOn = true;
+        stageWidth = 800;
+        stageHeight = 600;
+
         // Initialization of the background music
         Media bgmClip = new Media(new File("audio/bgm.mp3").toURI().toString());
         bgmPlayer = new MediaPlayer(bgmClip);
@@ -65,7 +82,7 @@ public class Main extends Application {
 
     /* ---------------------------------------------- MAIN MENU ---------------------------------------------- */
 
-    public void mainMenu(Stage stage) throws Exception {
+    private void mainMenu(Stage stage) throws FileNotFoundException {
         // Loading background image and binding its properties to the stage
         Image imgBg = new Image(new FileInputStream("graphics/bg.gif"));
         ImageView bgView = new ImageView(imgBg);
@@ -95,8 +112,8 @@ public class Main extends Application {
         BorderPane borderPane = new BorderPane();
         borderPane.setTop(gameName);
 
-        borderPane.setAlignment(gameName, Pos.CENTER);
-        borderPane.setMargin(gameName, new Insets(40));
+        BorderPane.setAlignment(gameName, Pos.CENTER);
+        BorderPane.setMargin(gameName, new Insets(40));
 
         VBox buttons = new VBox();
         buttons.setAlignment(Pos.CENTER);
@@ -107,15 +124,10 @@ public class Main extends Application {
         musicAndAudio.setAlignment(Pos.CENTER);
         musicAndAudio.setSpacing(40);
 
-        Image audioOnImg = new Image(new FileInputStream("graphics/audioOn.png"));
-        Image audioOffImg = new Image(new FileInputStream("graphics/audioOff.png"));
-        Image musicOnImg = new Image(new FileInputStream("graphics/musicOn.png"));
-        Image musicOffImg = new Image(new FileInputStream("graphics/musicOff.png"));
-
-        ImageView audioOnView = new ImageView(audioOnImg);
-        ImageView audioOffView = new ImageView(audioOffImg);
-        ImageView musicOnView = new ImageView(musicOnImg);
-        ImageView musicOffView = new ImageView(musicOffImg);
+        audioOnView = createImage("audioOn");
+        audioOffView = createImage("audioOff");
+        musicOnView = createImage("musicOn");
+        musicOffView = createImage("musicOff");
 
         audioOnView.setFitHeight(30);
         audioOnView.setFitWidth(30);
@@ -126,23 +138,10 @@ public class Main extends Application {
         musicOffView.setFitHeight(30);
         musicOffView.setFitWidth(30);
 
-        // Change audio button image according to audio's current state
         Button btAudio = new Button();
-        if (audioOn)
-            btAudio.setGraphic(audioOnView);
-        else
-            btAudio.setGraphic(audioOffView);
-
-        toggleAudio(btAudio, audioOffView, audioOnView);
-
-        // Change music button image according to music's current state
         Button btMusic = new Button();
-        if (musicOn)
-            btMusic.setGraphic(musicOnView);
-        else
-            btMusic.setGraphic(musicOffView);
 
-        toggleMusic(btMusic, musicOffView, musicOnView);
+        initializeToggleButtons(btAudio, btMusic);
 
         musicAndAudio.getChildren().addAll(btMusic, btAudio);
 
@@ -157,8 +156,8 @@ public class Main extends Application {
         developers.setEffect(ds);
         developers.setFill(Color.WHITE);
         developers.setStrokeType(StrokeType.OUTSIDE);
-        borderPane.setAlignment(developers, Pos.CENTER);
-        borderPane.setMargin(developers, new Insets(40));
+        BorderPane.setAlignment(developers, Pos.CENTER);
+        BorderPane.setMargin(developers, new Insets(40));
 
         borderPane.setCenter(buttons);
         borderPane.setBottom(developers);
@@ -185,9 +184,33 @@ public class Main extends Application {
         stage.setScene(sceneMain);
     }
 
+    private void initializeToggleButtons(Button btAudio, Button btMusic) {
+        // Change audio button image according to audio's current state
+
+        setButtonState(btAudio, audioOnView, audioOffView, audioOn);
+        toggleAudio(btAudio, audioOffView, audioOnView);
+
+        // Change music button image according to music's current state
+
+        setButtonState(btMusic, musicOnView, musicOffView, musicOn);
+        toggleMusic(btMusic, musicOffView, musicOnView);
+    }
+
+    private void setButtonState(Button button, ImageView stateOn, ImageView stateOff, boolean state) {
+        if (state)
+            button.setGraphic(stateOn);
+        else
+            button.setGraphic(stateOff);
+    }
+
+    private ImageView createImage(String name) throws FileNotFoundException {
+        Image image = new Image(new FileInputStream("graphics/" + name + ".png"));
+        return new ImageView(image);
+    }
+
     /* ---------------------------------------------- LEVELS ---------------------------------------------- */
 
-    public void levels(Stage stage, Scene sceneMain) throws Exception {
+    private void levels(Stage stage, Scene sceneMain) throws Exception {
         // Loading background image and binding its properties to the stage
         Image imgBg = new Image(new FileInputStream("graphics/clouds.gif"));
         ImageView bgView = new ImageView(imgBg);
@@ -217,7 +240,7 @@ public class Main extends Application {
             try {
                 mainMenu(stage);
             } catch (Exception e) {
-
+                e.printStackTrace();
             }
         });
 
@@ -255,13 +278,13 @@ public class Main extends Application {
         outerPane.setCenter(levelsPane);
 
         for (int i = 0; i < 5; i++) {
-            levelsPane.setMargin(btLevelsList.get(i), new Insets(40));
+            FlowPane.setMargin(btLevelsList.get(i), new Insets(40));
         }
 
-        headerPane.setAlignment(txtLevels, Pos.CENTER);
-        headerPane.setAlignment(btBack, Pos.CENTER_LEFT);
-        headerPane.setMargin(txtLevels, new Insets(40, 0, 0, 0));
-        headerPane.setMargin(btBack, new Insets(40, 0, 0, 40));
+        StackPane.setAlignment(txtLevels, Pos.CENTER);
+        StackPane.setAlignment(btBack, Pos.CENTER_LEFT);
+        StackPane.setMargin(txtLevels, new Insets(40, 0, 0, 0));
+        StackPane.setMargin(btBack, new Insets(40, 0, 0, 40));
 
         bgPane.getChildren().addAll(bgView, outerPane);
 
@@ -275,7 +298,7 @@ public class Main extends Application {
 
     /* ---------------------------------------------- GAME ---------------------------------------------- */
 
-    public void game(Stage stage, Scene sceneMain, int level) throws Exception {
+    private void game(Stage stage, Scene sceneMain, int level) throws Exception {
         DropShadow ds = new DropShadow();
         ds.setColor(Color.color(0.2f, 0.2f, 0.2f));
         ds.setSpread(0.2);
@@ -327,14 +350,14 @@ public class Main extends Application {
         StackPane headerPane = new StackPane();
         headerPane.getChildren().addAll(txtGame, btExit, btAudio, btMusic);
 
-        headerPane.setAlignment(txtGame, Pos.CENTER);
-        headerPane.setAlignment(btExit, Pos.CENTER_RIGHT);
-        headerPane.setAlignment(btAudio, Pos.CENTER_LEFT);
-        headerPane.setAlignment(btMusic, Pos.CENTER_LEFT);
-        headerPane.setMargin(txtGame, new Insets(40, 0, 0, 0));
-        headerPane.setMargin(btExit, new Insets(40, 40, 0, 0));
-        headerPane.setMargin(btAudio, new Insets(40, 0, 0, 100));
-        headerPane.setMargin(btMusic, new Insets(40, 0, 0, 40));
+        StackPane.setAlignment(txtGame, Pos.CENTER);
+        StackPane.setAlignment(btExit, Pos.CENTER_RIGHT);
+        StackPane.setAlignment(btAudio, Pos.CENTER_LEFT);
+        StackPane.setAlignment(btMusic, Pos.CENTER_LEFT);
+        StackPane.setMargin(txtGame, new Insets(40, 0, 0, 0));
+        StackPane.setMargin(btExit, new Insets(40, 40, 0, 0));
+        StackPane.setMargin(btAudio, new Insets(40, 0, 0, 100));
+        StackPane.setMargin(btMusic, new Insets(40, 0, 0, 40));
 
         txtStatus = new Text("");
         txtStatus.setFont(Font.font("Calibri", 20));
@@ -360,12 +383,12 @@ public class Main extends Application {
         StackPane bottomPane = new StackPane();
         bottomPane.getChildren().addAll(txtStatus, btLevels, btNextLv);
 
-        bottomPane.setAlignment(txtStatus, Pos.CENTER);
-        bottomPane.setAlignment(btNextLv, Pos.CENTER_RIGHT);
-        bottomPane.setAlignment(btLevels, Pos.CENTER_LEFT);
-        bottomPane.setMargin(txtStatus, new Insets(0, 0, 40, 0));
-        bottomPane.setMargin(btNextLv, new Insets(0, 40, 40, 0));
-        bottomPane.setMargin(btLevels, new Insets(0, 0, 40, 40));
+        StackPane.setAlignment(txtStatus, Pos.CENTER);
+        StackPane.setAlignment(btNextLv, Pos.CENTER_RIGHT);
+        StackPane.setAlignment(btLevels, Pos.CENTER_LEFT);
+        StackPane.setMargin(txtStatus, new Insets(0, 0, 40, 0));
+        StackPane.setMargin(btNextLv, new Insets(0, 40, 40, 0));
+        StackPane.setMargin(btLevels, new Insets(0, 0, 40, 40));
 
         btExit.setOnAction(event -> {
             if (audioOn) {
@@ -407,10 +430,10 @@ public class Main extends Application {
         stageHeight = stage.getHeight();
 
         // Read level input file for initializing stage
-        StageControl.readStage(level);
+        stageControl.readStage(level);
 
         // Get game map from read file
-        int[][] grid = StageControl.getGrid();
+        int[][] grid = stageControl.getGrid();
 
         // Pane which holds tiles
         StackPane centerPane = new StackPane();
@@ -421,13 +444,13 @@ public class Main extends Application {
         outerPane.setBottom(bottomPane);
         outerPane.setStyle("-fx-background-color: #98e0e0");
 
-        TileControl.readGrid(grid, centerPane, stageHeight);
+        tileControl.readGrid(grid, centerPane, stageHeight);
 
         // Find starter tile of the level
-        Tile starterTile = StageControl.getStarterTile();
+        Tile starterTile = stageControl.getStarterTile();
 
         // Check whether the level has completed
-        StageControl.checkIsReached(starterTile, StageControl.getExitPoint());
+        stageControl.checkIsReached(starterTile, stageControl.getExitPoint());
 
         pathTransition = new PathTransition();
 
@@ -437,14 +460,14 @@ public class Main extends Application {
         stage.setScene(sceneGame);
     }
 
-    public static void playTransition() {
-        pathTransition.setNode(TileControl.getBallView());
-        pathTransition.setPath(StageControl.getPath());
+    public void playTransition() {
+        pathTransition.setNode(tileControl.getBallView());
+        pathTransition.setPath(stageControl.getPath());
         pathTransition.setDuration(Duration.millis(2000));
         pathTransition.play();
     }
 
-    private static void toggleMusic(Button btMusic, ImageView musicOffView, ImageView musicOnView) {
+    private void toggleMusic(Button btMusic, ImageView musicOffView, ImageView musicOnView) {
         btMusic.setOnAction(event -> {
             if (audioOn) {
                 sfxPlayer.stop();
@@ -453,7 +476,7 @@ public class Main extends Application {
             if (musicOn) {
                 btMusic.setGraphic(musicOffView);
                 bgmPlayer.stop();
-                StageControl.getDungeonWinPlayer().stop();
+                stageControl.getDungeonWinPlayer().stop();
                 musicOn = false;
             } else {
                 btMusic.setGraphic(musicOnView);
@@ -463,7 +486,7 @@ public class Main extends Application {
         });
     }
 
-    private static void toggleAudio(Button btAudio, ImageView audioOffView, ImageView audioOnView) {
+    private void toggleAudio(Button btAudio, ImageView audioOffView, ImageView audioOnView) {
         btAudio.setOnAction(event -> {
             if (audioOn) {
                 btAudio.setGraphic(audioOffView);
@@ -477,23 +500,31 @@ public class Main extends Application {
         });
     }
 
-    public static Text getTxtStatus() {
+    public Text getTxtStatus() {
         return txtStatus;
     }
 
-    public static Button getBtNextLv() {
+    public Button getBtNextLv() {
         return btNextLv;
     }
 
-    public static MediaPlayer getBgmPlayer() {
+    public MediaPlayer getBgmPlayer() {
         return bgmPlayer;
     }
 
-    public static boolean isMusicOn() {
+    public boolean isMusicOn() {
         return musicOn;
     }
 
-    public static boolean isAudioOn() {
+    public boolean isAudioOn() {
         return audioOn;
+    }
+
+    public StageControl getStageControl() {
+        return stageControl;
+    }
+
+    public TileControl getTileControl() {
+        return tileControl;
     }
 }

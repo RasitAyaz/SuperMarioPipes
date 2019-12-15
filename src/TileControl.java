@@ -11,22 +11,37 @@ import java.util.ArrayList;
 // Ahmet Emirhan Bakkal
 // Muhammed Raşit Ayaz
 
+@SuppressWarnings("WeakerAccess")
 public class TileControl {
-    private static double oldSceneX, oldSceneY;
-    private static double oldTranslateX, oldTranslateY;
-    private static double tileSize;
+    private final int COL = 4;
+    private final int ROW = 4;
 
-    private static ArrayList<Tile> tiles = StageControl.getTiles();
+    private double oldSceneX, oldSceneY, oldTranslateX, oldTranslateY, tileSize;
+    private int[][] grid;
 
-    private static Media shellAudio = new Media(new File("audio/shell-hit.mp3").toURI().toString());
-    private static MediaPlayer shellPlayer = new MediaPlayer(shellAudio);
+    private ArrayList<Tile> tiles;
 
-    private static ImageView ballView;
-    private static ImageView[][] tileViews;
+    private MediaPlayer shellPlayer;
 
-    private static boolean canMoveLeft = false, canMoveUp = false, canMoveRight = false, canMoveDown = false;
+    private ImageView ballView;
+    private ImageView[][] tileViews;
 
-    public static void readGrid(int[][] grid, StackPane centerPane, double stageHeight) throws Exception {
+    private Main main;
+    private StageControl stageControl;
+
+    public TileControl() {
+        Media shellAudio = new Media(new File("audio/shell-hit.mp3").toURI().toString());
+        shellPlayer = new MediaPlayer(shellAudio);
+    }
+
+    public void connect(Main main) {
+        this.main = main;
+        stageControl = main.getStageControl();
+        tiles = stageControl.getTiles();
+    }
+
+    public void readGrid(int[][] inputGrid, StackPane centerPane, double stageHeight) throws Exception {
+        grid = inputGrid;
         tileViews = new ImageView[4][4];
         tileSize = stageHeight / 7;
 
@@ -82,9 +97,9 @@ public class TileControl {
             }
         }
 
-        Tile starterTile = StageControl.getStarterTile();
+        Tile starterTile = stageControl.getStarterTile();
 
-        StageControl.checkIsReached(starterTile, StageControl.getExitPoint());
+        stageControl.checkIsReached(starterTile, stageControl.getExitPoint());
 
         /* DRAG BALL
         ballView.setOnMousePressed(event -> {
@@ -104,19 +119,19 @@ public class TileControl {
         relocateGrid(grid, tileViews, centerPane, stageHeight);
     }
 
-    private static void relocateGrid(int[][] grid, ImageView[][] tileViews, StackPane centerPane, double stageHeight) {
-        double tileSize = stageHeight / 7;
+    private void relocateGrid(int[][] grid, ImageView[][] tileViews, StackPane centerPane, double stageHeight) {
+        tileSize = stageHeight / 7;
 
         for (int r = 0; r < 4; r++) {
             for (int c = 0; c < 4; c++) {
                 int type = grid[c][r];
-                if (type != 0 && !StageControl.isLevelCompleted()) {
+                if (type != 0 && !stageControl.isLevelCompleted()) {
                     final ImageView tileView = tileViews[r][c];
 
-                    canMoveLeft = false;
-                    canMoveUp = false;
-                    canMoveRight = false;
-                    canMoveDown = false;
+                    boolean canMoveLeft = false;
+                    boolean canMoveUp = false;
+                    boolean canMoveRight = false;
+                    boolean canMoveDown = false;
 
                     if ((grid[c][r] >= 12 && grid[c][r] <= 17) || grid[c][r] == 1) {
                         try {
@@ -177,8 +192,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -186,49 +201,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    if (tileView.getTranslateX() - oldTranslateX < -tileSize / 2) {
-                                        tileView.setTranslateX(oldTranslateX - tileSize);
-                                        grid[col - 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 1);
-                                        tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
-                                    } else {
-                                        tileView.setTranslateX(oldTranslateX + tileSize);
-                                        grid[col + 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 1);
-                                        tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
-                                    }
+                                    moveTileLR(tileView, col, row);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    if (tileView.getTranslateY() - oldTranslateY < -tileSize / 2) {
-                                        tileView.setTranslateY(oldTranslateY - tileSize);
-                                        grid[col][row - 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 4);
-                                        tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
-                                    } else {
-                                        tileView.setTranslateY(oldTranslateY + tileSize);
-                                        grid[col][row + 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 4);
-                                        tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
-                                    }
+                                    moveTileUD(tileView, col, row);
                                 }
                             }
 
@@ -265,8 +244,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -274,38 +253,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    if (tileView.getTranslateX() - oldTranslateX < -tileSize / 2) {
-                                        tileView.setTranslateX(oldTranslateX - tileSize);
-                                        grid[col - 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 1);
-                                        tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
-                                    } else {
-                                        tileView.setTranslateX(oldTranslateX + tileSize);
-                                        grid[col + 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 1);
-                                        tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
-                                    }
+                                    moveTileLR(tileView, col, row);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                    grid[col][row + 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 4);
-                                    tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
+                                    moveTile(0, 1, col, row, tileView);
                                 }
                             }
 
@@ -321,7 +275,7 @@ public class TileControl {
                         });
                     } else if (canMoveUp && canMoveRight && canMoveLeft) { /* ---- UP, RIGHT, LEFT ---- */
                         tileView.setOnMouseDragged(event -> {
-                            if (Math.abs(event.getSceneX() - oldSceneX) > - (event.getSceneY() - oldSceneY)) {
+                            if (Math.abs(event.getSceneX() - oldSceneX) > -(event.getSceneY() - oldSceneY)) {
                                 tileView.setTranslateY(oldTranslateY);
 
                                 if (event.getSceneX() - oldSceneX < -tileSize)
@@ -342,8 +296,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -351,38 +305,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    if (tileView.getTranslateX() - oldTranslateX < -tileSize / 2) {
-                                        tileView.setTranslateX(oldTranslateX - tileSize);
-                                        grid[col - 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 1);
-                                        tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
-                                    } else {
-                                        tileView.setTranslateX(oldTranslateX + tileSize);
-                                        grid[col + 1][row] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 1);
-                                        tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
-                                    }
+                                    moveTileLR(tileView, col, row);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                    grid[col][row - 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 4);
-                                    tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
+                                    moveTile(0, -1, col, row, tileView);
                                 }
                             }
 
@@ -419,8 +348,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -428,38 +357,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                    grid[col + 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 1);
-                                    tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
+                                    moveTile(1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    if (tileView.getTranslateY() - oldTranslateY < -tileSize / 2) {
-                                        tileView.setTranslateY(oldTranslateY - tileSize);
-                                        grid[col][row - 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 4);
-                                        tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
-                                    } else {
-                                        tileView.setTranslateY(oldTranslateY + tileSize);
-                                        grid[col][row + 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 4);
-                                        tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
-                                    }
+                                    moveTileUD(tileView, col, row);
                                 }
                             }
 
@@ -475,7 +379,7 @@ public class TileControl {
                         });
                     } else if (canMoveDown && canMoveUp && canMoveLeft) { /* ---- DOWN, LEFT, UP ---- */
                         tileView.setOnMouseDragged(event -> {
-                            if (- (event.getSceneX() - oldSceneX) > Math.abs(event.getSceneY() - oldSceneY)) {
+                            if (-(event.getSceneX() - oldSceneX) > Math.abs(event.getSceneY() - oldSceneY)) {
                                 tileView.setTranslateY(oldTranslateY);
 
                                 if (event.getSceneX() - oldSceneX > 0)
@@ -496,8 +400,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -505,38 +409,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                    grid[col - 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 1);
-                                    tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
+                                    moveTile(-1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    if (tileView.getTranslateY() - oldTranslateY < -tileSize / 2) {
-                                        tileView.setTranslateY(oldTranslateY - tileSize);
-                                        grid[col][row - 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col - 4);
-                                        tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
-                                    } else {
-                                        tileView.setTranslateY(oldTranslateY + tileSize);
-                                        grid[col][row + 1] = grid[col][row];
-                                        grid[col][row] = 0;
-                                        Tile tempTile = tiles.get(4 * row + col + 4);
-                                        tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                        tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                        tiles.set(4 * row + col, tempTile);
-                                        tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
-                                    }
+                                    moveTileUD(tileView, col, row);
                                 }
                             }
 
@@ -573,8 +452,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -582,27 +461,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                    grid[col + 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 1);
-                                    tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
+                                    moveTile(1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                    grid[col][row + 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 4);
-                                    tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
+                                    moveTile(0, 1, col, row, tileView);
                                 }
                             }
 
@@ -618,7 +483,7 @@ public class TileControl {
                         });
                     } else if (canMoveLeft && canMoveDown) { /* ---- DOWN, LEFT ---- */
                         tileView.setOnMouseDragged(event -> {
-                            if (- (event.getSceneX() - oldSceneX) > event.getSceneY() - oldSceneY) {
+                            if (-(event.getSceneX() - oldSceneX) > event.getSceneY() - oldSceneY) {
                                 tileView.setTranslateY(oldTranslateY);
 
                                 if (event.getSceneX() - oldSceneX > 0)
@@ -639,8 +504,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -648,27 +513,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                    grid[col - 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 1);
-                                    tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
+                                    moveTile(-1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                    grid[col][row + 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 4);
-                                    tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
+                                    moveTile(0, 1, col, row, tileView);
                                 }
                             }
 
@@ -684,7 +535,7 @@ public class TileControl {
                         });
                     } else if (canMoveLeft && canMoveUp) { /* ---- UP, LEFT ---- */
                         tileView.setOnMouseDragged(event -> {
-                            if (- (event.getSceneX() - oldSceneX) > - (event.getSceneY() - oldSceneY)) {
+                            if (-(event.getSceneX() - oldSceneX) > -(event.getSceneY() - oldSceneY)) {
                                 tileView.setTranslateY(oldTranslateY);
 
                                 if (event.getSceneX() - oldSceneX > 0)
@@ -705,8 +556,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -714,27 +565,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                    grid[col - 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 1);
-                                    tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
+                                    moveTile(-1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                    grid[col][row - 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 4);
-                                    tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
+                                    moveTile(0, -1, col, row, tileView);
                                 }
                             }
 
@@ -750,7 +587,7 @@ public class TileControl {
                         });
                     } else if (canMoveRight && canMoveUp) { /* ---- UP, RIGHT ---- */
                         tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX > - (event.getSceneY() - oldSceneY)) {
+                            if (event.getSceneX() - oldSceneX > -(event.getSceneY() - oldSceneY)) {
                                 tileView.setTranslateY(oldTranslateY);
 
                                 if (event.getSceneX() - oldSceneX < 0)
@@ -771,8 +608,8 @@ public class TileControl {
                             }
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
@@ -780,27 +617,13 @@ public class TileControl {
                                 if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
                                     tileView.setTranslateX(oldTranslateX);
                                 else {
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                    grid[col + 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 1);
-                                    tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
+                                    moveTile(1, 0, col, row, tileView);
                                 }
                             } else if (tileView.getTranslateX() == oldTranslateX) {
                                 if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                     tileView.setTranslateY(oldTranslateY);
                                 else {
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                    grid[col][row - 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 4);
-                                    tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
+                                    moveTile(0, -1, col, row, tileView);
                                 }
                             }
 
@@ -824,33 +647,15 @@ public class TileControl {
                                 tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                 tileView.setTranslateX(oldTranslateX);
                             else {
-                                if (tileView.getTranslateX() - oldTranslateX < -tileSize / 2) {
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                    grid[col - 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 1);
-                                    tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
-                                } else {
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                    grid[col + 1][row] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 1);
-                                    tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
-                                }
+                                moveTileLR(tileView, col, row);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -873,33 +678,15 @@ public class TileControl {
                                 tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                 tileView.setTranslateY(oldTranslateY);
                             else {
-                                if (tileView.getTranslateY() - oldTranslateY < -tileSize / 2) {
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                    grid[col][row - 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col - 4);
-                                    tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
-                                } else {
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                    grid[col][row + 1] = grid[col][row];
-                                    grid[col][row] = 0;
-                                    Tile tempTile = tiles.get(4 * row + col + 4);
-                                    tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                    tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                    tiles.set(4 * row + col, tempTile);
-                                    tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
-                                }
+                                moveTileUD(tileView, col, row);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -912,9 +699,7 @@ public class TileControl {
                                 }
                             }
                         });
-                    }
-
-                    else if (canMoveDown) {
+                    } else if (canMoveDown) {
                         tileView.setOnMouseDragged(event -> {
                             if (event.getSceneY() - oldSceneY < 0)
                                 tileView.setTranslateY(oldTranslateY);
@@ -924,22 +709,15 @@ public class TileControl {
                                 tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
                                 tileView.setTranslateY(oldTranslateY);
                             else {
-                                tileView.setTranslateY(oldTranslateY + tileSize);
-                                grid[col][row + 1] = grid[col][row];
-                                grid[col][row] = 0;
-                                Tile tempTile = tiles.get(4 * row + col + 4);
-                                tiles.set(4 * row + col + 4, tiles.get(4 * row + col));
-                                tiles.get(4 * row + col + 4).setY(tiles.get(4 * row + col + 4).getY() + 1);
-                                tiles.set(4 * row + col, tempTile);
-                                tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() - 1);
+                                moveTile(0, 1, col, row, tileView);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -962,22 +740,15 @@ public class TileControl {
                                 tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
                                 tileView.setTranslateX(oldTranslateX);
                             else {
-                                tileView.setTranslateX(oldTranslateX + tileSize);
-                                grid[col + 1][row] = grid[col][row];
-                                grid[col][row] = 0;
-                                Tile tempTile = tiles.get(4 * row + col + 1);
-                                tiles.set(4 * row + col + 1, tiles.get(4 * row + col));
-                                tiles.get(4 * row + col + 1).setX(tiles.get(4 * row + col + 1).getX() + 1);
-                                tiles.set(4 * row + col, tempTile);
-                                tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() - 1);
+                                moveTile(1, 0, col, row, tileView);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -1000,22 +771,15 @@ public class TileControl {
                                 tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
                                 tileView.setTranslateY(oldTranslateY);
                             else {
-                                tileView.setTranslateY(oldTranslateY - tileSize);
-                                grid[col][row - 1] = grid[col][row];
-                                grid[col][row] = 0;
-                                Tile tempTile = tiles.get(4 * row + col - 4);
-                                tiles.set(4 * row + col - 4, tiles.get(4 * row + col));
-                                tiles.get(4 * row + col - 4).setY(tiles.get(4 * row + col - 4).getY() - 1);
-                                tiles.set(4 * row + col, tempTile);
-                                tiles.get(4 * row + col).setY(tiles.get(4 * row + col).getY() + 1);
+                                moveTile(0, -1, col, row, tileView);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -1038,22 +802,15 @@ public class TileControl {
                                 tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
                         });
 
-                        tileView.setOnMouseReleased(event  -> {
-                            if (Main.isAudioOn()) {
+                        tileView.setOnMouseReleased(event -> {
+                            if (main.isAudioOn()) {
                                 shellPlayer.stop();
                                 shellPlayer.play();
                             }
                             if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
                                 tileView.setTranslateX(oldTranslateX);
                             else {
-                                tileView.setTranslateX(oldTranslateX - tileSize);
-                                grid[col - 1][row] = grid[col][row];
-                                grid[col][row] = 0;
-                                Tile tempTile = tiles.get(4 * row + col - 1);
-                                tiles.set(4 * row + col - 1, tiles.get(4 * row + col));
-                                tiles.get(4 * row + col - 1).setX(tiles.get(4 * row + col - 1).getX() - 1);
-                                tiles.set(4 * row + col, tempTile);
-                                tiles.get(4 * row + col).setX(tiles.get(4 * row + col).getX() + 1);
+                                moveTile(-1, 0, col, row, tileView);
 
                                 tileView.setOnMousePressed(null);
                                 tileView.setOnMouseDragged(null);
@@ -1072,15 +829,48 @@ public class TileControl {
         }
     }
 
-    public static ImageView getBallView() {
+    private void moveTileLR(ImageView tileView, int col, int row) {
+        if (tileView.getTranslateX() - oldTranslateX < -tileSize / 2) {
+            moveTile(-1, 0, col, row, tileView);
+        } else {
+            moveTile(1, 0, col, row, tileView);
+        }
+    }
+
+    private void moveTileUD(ImageView tileView, int col, int row) {
+        if (tileView.getTranslateY() - oldTranslateY < -tileSize / 2) {
+            moveTile(0, -1, col, row, tileView);
+        } else {
+            moveTile(0, 1, col, row, tileView);
+        }
+    }
+
+    public void moveTile(int x, int y, int col, int row, ImageView tileView) {
+        tileView.setTranslateX(oldTranslateX + x * tileSize);
+        tileView.setTranslateY(oldTranslateY + y * tileSize);
+        grid[col + x][row + y] = grid[col][row];
+        grid[col][row] = 0;
+        int tileIndex = COL * row + col;
+        int targetTileIndex = tileIndex + x + y * COL;
+        Tile tileToMove = tiles.get(tileIndex);
+        Tile targetTile = tiles.get(targetTileIndex);
+        tileToMove.setX(tileToMove.getX() + x);
+        tileToMove.setY(tileToMove.getY() + y);
+        tiles.set(targetTileIndex, tileToMove);
+        targetTile.setX(targetTile.getX() - x);
+        targetTile.setY(targetTile.getY() - y);
+        tiles.set(tileIndex, targetTile);
+    }
+
+    public ImageView getBallView() {
         return ballView;
     }
 
-    public static double getTileSize() {
+    public double getTileSize() {
         return tileSize;
     }
 
-    public static ImageView[][] getTileViews() {
+    public ImageView[][] getTileViews() {
         return tileViews;
     }
 }

@@ -13,30 +13,44 @@ import java.util.Scanner;
 // Ahmet Emirhan Bakkal
 // Muhammed Raşit Ayaz
 
+@SuppressWarnings("WeakerAccess")
 public class StageControl {
-    private static int[][] grid = new int[4][4];
-    private static ArrayList<Tile> tiles = new ArrayList<>();
-    private static Tile nextTile;
-    private static int nextEntrance = 0;
-    private static boolean isReached = false;
-    private static boolean levelCompleted = false;
-    private static int level;
-    private static Path path = new javafx.scene.shape.Path();
+    private int[][] grid;
+    private ArrayList<Tile> tiles;
+    private Tile nextTile;
+    private int nextEntrance;
+    private boolean isReached, levelCompleted;
+    private Path path;
 
-    private static PathElement moveTo = new MoveTo(0, 0);
-    private static PathElement lineTo = new LineTo(0, 0);
+    private PathElement moveTo, lineTo, moveTo2, lineTo2;
 
-    private static PathElement moveTo2 = new MoveTo(0, 0);
-    private static PathElement lineTo2 = new LineTo(0, 0);
+    private MediaPlayer dungeonWinPlayer;
 
-    private static Media dungeonWinAudio = new Media(new File("audio/dungeon-win.mp3").toURI().toString());
-    private static MediaPlayer dungeonWinPlayer = new MediaPlayer(dungeonWinAudio);
+    Main main;
+    TileControl tileControl;
 
-    public static void readStage(int level) {
+    public StageControl() {
+        grid = new int[4][4];
+        tiles = new ArrayList<>();
+        path = new javafx.scene.shape.Path();
+        Media dungeonWinAudio = new Media(new File("audio/dungeon-win.mp3").toURI().toString());
+        dungeonWinPlayer = new MediaPlayer(dungeonWinAudio);
+
+        moveTo = new MoveTo(0, 0);
+        lineTo = new LineTo(0, 0);
+        moveTo2 = new MoveTo(0, 0);
+        lineTo2 = new LineTo(0, 0);
+    }
+
+    public void connect(Main main) {
+        this.main = main;
+        tileControl = main.getTileControl();
+    }
+
+    public void readStage(int level) {
         try {
             Scanner br = new Scanner(new FileReader("stages/level" + level + ".txt"));
             String line;
-            StageControl.level = level;
 
             // Clear the game map to use it on different level
             tiles.clear();
@@ -52,70 +66,90 @@ public class StageControl {
                 int y = (id - 1) / 4;
                 String type = splitLine[1];
                 String rotation = splitLine[2];
-                if (type.equals("Starter")) {
-                    if (rotation.equals("Vertical")) {
-                        grid[x][y] = 2;
-                        tiles.add(new Tile(x, y, 2, 0, 3));
-                    } else if (rotation.equals("Horizontal")) {
-                        grid[x][y] = 3;
-                        tiles.add(new Tile(x, y, 3, 0, 4));
-                    }
-                } else if (type.equals("Empty")) {
-                    if (rotation.equals("none")) {
-                        grid[x][y] = 1;
-                        tiles.add(new Tile(x, y, 1, 0, 0));
-                    } else if (rotation.equals("Free")) {
-                        grid[x][y] = 0;
-                        tiles.add(new Tile(x, y, 0, 0, 0));
-                    }
-                } else if (type.equals("Pipe")) {
-                    if (rotation.equals("Vertical")) {
-                        grid[x][y] = 12;
-                        tiles.add(new Tile(x, y, 12, 1, 3));
-                    } else if (rotation.equals("Horizontal")) {
-                        grid[x][y] = 13;
-                        tiles.add(new Tile(x, y, 13, 2, 4));
-                    } else if (rotation.equals("00")) {
-                        grid[x][y] = 14;
-                        tiles.add(new Tile(x, y, 14, 1, 4));
-                    } else if (rotation.equals("01")) {
-                        grid[x][y] = 15;
-                        tiles.add(new Tile(x, y, 15, 1, 2));
-                    } else if (rotation.equals("10")) {
-                        grid[x][y] = 16;
-                        tiles.add(new Tile(x, y, 16, 3, 4));
-                    } else if (rotation.equals("11")) {
-                        grid[x][y] = 17;
-                        tiles.add(new Tile(x, y, 17, 2, 3));
-                    }
-                } else if (type.equals("PipeStatic")) {
-                    if (rotation.equals("Vertical")) {
-                        grid[x][y] = 6;
-                        tiles.add(new Tile(x, y, 6, 1, 3));
-                    } else if (rotation.equals("Horizontal")) {
-                        grid[x][y] = 7;
-                        tiles.add(new Tile(x, y, 7, 2, 4));
-                    } else if (rotation.equals("00")) {
-                        grid[x][y] = 8;
-                        tiles.add(new Tile(x, y, 8, 1, 4));
-                    } else if (rotation.equals("01")) {
-                        grid[x][y] = 9;
-                        tiles.add(new Tile(x, y, 9, 1, 2));
-                    } else if (rotation.equals("10")) {
-                        grid[x][y] = 10;
-                        tiles.add(new Tile(x, y, 10, 3, 4));
-                    } else if (rotation.equals("11")) {
-                        grid[x][y] = 11;
-                        tiles.add(new Tile(x, y, 11, 2, 3));
-                    }
-                } else if (type.equals("End")) {
-                    if (rotation.equals("Vertical")) {
-                        grid[x][y] = 4;
-                        tiles.add(new Tile(x, y, 4, 3, 0));
-                    } else if (rotation.equals("Horizontal")) {
-                        grid[x][y] = 5;
-                        tiles.add(new Tile(x, y, 5, 4, 0));
-                    }
+                switch (type) {
+                    case "Starter":
+                        if (rotation.equals("Vertical")) {
+                            grid[x][y] = 2;
+                            tiles.add(new Tile(x, y, 2, 0, 3));
+                        } else if (rotation.equals("Horizontal")) {
+                            grid[x][y] = 3;
+                            tiles.add(new Tile(x, y, 3, 0, 4));
+                        }
+                        break;
+                    case "Empty":
+                        if (rotation.equals("none")) {
+                            grid[x][y] = 1;
+                            tiles.add(new Tile(x, y, 1, 0, 0));
+                        } else if (rotation.equals("Free")) {
+                            grid[x][y] = 0;
+                            tiles.add(new Tile(x, y, 0, 0, 0));
+                        }
+                        break;
+                    case "Pipe":
+                        switch (rotation) {
+                            case "Vertical":
+                                grid[x][y] = 12;
+                                tiles.add(new Tile(x, y, 12, 1, 3));
+                                break;
+                            case "Horizontal":
+                                grid[x][y] = 13;
+                                tiles.add(new Tile(x, y, 13, 2, 4));
+                                break;
+                            case "00":
+                                grid[x][y] = 14;
+                                tiles.add(new Tile(x, y, 14, 1, 4));
+                                break;
+                            case "01":
+                                grid[x][y] = 15;
+                                tiles.add(new Tile(x, y, 15, 1, 2));
+                                break;
+                            case "10":
+                                grid[x][y] = 16;
+                                tiles.add(new Tile(x, y, 16, 3, 4));
+                                break;
+                            case "11":
+                                grid[x][y] = 17;
+                                tiles.add(new Tile(x, y, 17, 2, 3));
+                                break;
+                        }
+                        break;
+                    case "PipeStatic":
+                        switch (rotation) {
+                            case "Vertical":
+                                grid[x][y] = 6;
+                                tiles.add(new Tile(x, y, 6, 1, 3));
+                                break;
+                            case "Horizontal":
+                                grid[x][y] = 7;
+                                tiles.add(new Tile(x, y, 7, 2, 4));
+                                break;
+                            case "00":
+                                grid[x][y] = 8;
+                                tiles.add(new Tile(x, y, 8, 1, 4));
+                                break;
+                            case "01":
+                                grid[x][y] = 9;
+                                tiles.add(new Tile(x, y, 9, 1, 2));
+                                break;
+                            case "10":
+                                grid[x][y] = 10;
+                                tiles.add(new Tile(x, y, 10, 3, 4));
+                                break;
+                            case "11":
+                                grid[x][y] = 11;
+                                tiles.add(new Tile(x, y, 11, 2, 3));
+                                break;
+                        }
+                        break;
+                    case "End":
+                        if (rotation.equals("Vertical")) {
+                            grid[x][y] = 4;
+                            tiles.add(new Tile(x, y, 4, 3, 0));
+                        } else if (rotation.equals("Horizontal")) {
+                            grid[x][y] = 5;
+                            tiles.add(new Tile(x, y, 5, 4, 0));
+                        }
+                        break;
                 }
             }
         } catch (Exception e) {
@@ -123,7 +157,7 @@ public class StageControl {
         }
     }
 
-    private static boolean canMoveNext(Tile currentTile, int exitPoint) {
+    private boolean canMoveNext(Tile currentTile, int exitPoint) {
         int firstExit = currentTile.getEntranceOne();
         int secondExit = currentTile.getEntranceTwo();
 
@@ -222,23 +256,24 @@ public class StageControl {
         return false;
     }
 
-    public static void checkIsReached(Tile currentTile, int exitPoint) {
+    public void checkIsReached(Tile currentTile, int exitPoint) {
         // Check whether the connection of the pipes is completed and reached exit point
         if (canMoveNext(currentTile, exitPoint)) {
             if (isReached) {
                 createPath(nextTile, 0);
                 path.getElements().addAll(moveTo, lineTo);
-                Main.playTransition();
-                Main.getTxtStatus().setText("Congratulations! You've completed this level.");
-                Main.getBtNextLv().setDisable(false);
+                main.playTransition();
+                main.getTxtStatus().setText("Congratulations! You've completed this level.");
+                main.getBtNextLv().setDisable(false);
                 levelCompleted = true;
 
-                if (Main.isMusicOn()) {
+                if (main.isMusicOn()) {
                     dungeonWinPlayer.play();
-                    Main.getBgmPlayer().pause();
+                    main.getBgmPlayer().pause();
                     dungeonWinPlayer.setOnEndOfMedia(() -> {
-                        if (Main.isMusicOn())
-                            Main.getBgmPlayer().play();
+                        dungeonWinPlayer.stop();
+                        if (main.isMusicOn())
+                            main.getBgmPlayer().play();
                     });
                 }
                 isReached = false;
@@ -253,11 +288,11 @@ public class StageControl {
         }
     }
 
-    public static Tile getTileById(int id) {
+    private Tile getTileById(int id) {
         return tiles.get(id);
     }
 
-    public static Tile getStarterTile() {
+    public Tile getStarterTile() {
         for (Tile tile : tiles) {
             if (tile.getType() == 2 || tile.getType() == 3) {
                 return tile;
@@ -266,12 +301,12 @@ public class StageControl {
         return null;
     }
 
-    private static void createPath(Tile tile, int entrance) {
-        double tileSize = TileControl.getTileSize();
+    private void createPath(Tile tile, int entrance) {
+        double tileSize = tileControl.getTileSize();
         int type = tile.getType();
 
-        double x = TileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateX() + tileSize / 8;
-        double y = TileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateY() + tileSize / 8;
+        double x = tileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateX() + tileSize / 8;
+        double y = tileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateY() + tileSize / 8;
 
         // Create path elements according to current tile type
         if (type == 2) {
@@ -353,27 +388,27 @@ public class StageControl {
         }
     }
 
-    public static int getExitPoint() {
+    public int getExitPoint() {
         return getStarterTile().getEntranceTwo();
     }
 
-    public static int[][] getGrid() {
+    public int[][] getGrid() {
         return grid;
     }
 
-    public static ArrayList<Tile> getTiles() {
+    public ArrayList<Tile> getTiles() {
         return tiles;
     }
 
-    public static Path getPath() {
+    public Path getPath() {
         return path;
     }
 
-    public static boolean isLevelCompleted() {
+    public boolean isLevelCompleted() {
         return levelCompleted;
     }
 
-    public static MediaPlayer getDungeonWinPlayer() {
+    public MediaPlayer getDungeonWinPlayer() {
         return dungeonWinPlayer;
     }
 }
