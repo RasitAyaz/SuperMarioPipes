@@ -71,7 +71,7 @@ public class Main extends Application {
         bgmPlayer.play();
 
         // Launching main menu method with primary stage argument
-        mainMenu(stage);
+        viewMainMenu(stage);
 
         // Setting up stage properties
         stage.setWidth(stageWidth);
@@ -82,7 +82,7 @@ public class Main extends Application {
 
     /* ---------------------------------------------- MAIN MENU ---------------------------------------------- */
 
-    private void mainMenu(Stage stage) throws FileNotFoundException {
+    private void viewMainMenu(Stage stage) throws FileNotFoundException {
         // Loading background image and binding its properties to the stage
         Image imgBg = new Image(new FileInputStream("graphics/bg.gif"));
         ImageView bgView = new ImageView(imgBg);
@@ -171,7 +171,7 @@ public class Main extends Application {
                 sfxPlayer.play();
             }
             try {
-                levels(stage, sceneMain);
+                viewLevelsScene(stage, sceneMain);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -210,7 +210,7 @@ public class Main extends Application {
 
     /* ---------------------------------------------- LEVELS ---------------------------------------------- */
 
-    private void levels(Stage stage, Scene sceneMain) throws Exception {
+    private void viewLevelsScene(Stage stage, Scene sceneMain) throws Exception {
         // Loading background image and binding its properties to the stage
         Image imgBg = new Image(new FileInputStream("graphics/clouds.gif"));
         ImageView bgView = new ImageView(imgBg);
@@ -238,7 +238,7 @@ public class Main extends Application {
                 sfxPlayer.play();
             }
             try {
-                mainMenu(stage);
+                viewMainMenu(stage);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -267,7 +267,7 @@ public class Main extends Application {
                     ringPlayer.play();
                 }
                 try {
-                    game(stage, sceneMain, lvl);
+                    viewGameScene(stage, sceneMain, lvl);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -298,7 +298,7 @@ public class Main extends Application {
 
     /* ---------------------------------------------- GAME ---------------------------------------------- */
 
-    private void game(Stage stage, Scene sceneMain, int level) throws Exception {
+    private void viewGameScene(Stage stage, Scene sceneMain, int level) throws Exception {
         DropShadow ds = new DropShadow();
         ds.setColor(Color.color(0.2f, 0.2f, 0.2f));
         ds.setSpread(0.2);
@@ -396,7 +396,7 @@ public class Main extends Application {
                 sfxPlayer.play();
             }
             try {
-                mainMenu(stage);
+                viewMainMenu(stage);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -408,7 +408,7 @@ public class Main extends Application {
                 sfxPlayer.play();
             }
             try {
-                levels(stage, sceneMain);
+                viewLevelsScene(stage, sceneMain);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -420,7 +420,7 @@ public class Main extends Application {
                 sfxPlayer.play();
             }
             try {
-                game(stage, sceneMain, level + 1);
+                viewGameScene(stage, sceneMain, level + 1);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -460,7 +460,7 @@ public class Main extends Application {
         stage.setScene(sceneGame);
     }
 
-    public void playTransition() {
+    public void playPathTransition() {
         pathTransition.setNode(tileControl.getBallView());
         pathTransition.setPath(stageControl.getPath());
         pathTransition.setDuration(Duration.millis(2000));

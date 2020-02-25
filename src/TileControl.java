@@ -1,5 +1,6 @@
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -13,10 +14,7 @@ import java.util.ArrayList;
 
 @SuppressWarnings("WeakerAccess")
 public class TileControl {
-    private final int COL = 4;
-    private final int ROW = 4;
-
-    private double oldSceneX, oldSceneY, oldTranslateX, oldTranslateY, tileSize;
+    private double oldSceneX, oldSceneY, oldTranslateX, oldTranslateY, tileSize, stageHeight;
     private int[][] grid;
 
     private ArrayList<Tile> tiles;
@@ -25,6 +23,7 @@ public class TileControl {
 
     private ImageView ballView;
     private ImageView[][] tileViews;
+    private StackPane centerPane;
 
     private Main main;
     private StageControl stageControl;
@@ -41,6 +40,9 @@ public class TileControl {
     }
 
     public void readGrid(int[][] inputGrid, StackPane centerPane, double stageHeight) throws Exception {
+        this.centerPane = centerPane;
+        this.stageHeight = stageHeight;
+
         grid = inputGrid;
         tileViews = new ImageView[4][4];
         tileSize = stageHeight / 7;
@@ -101,25 +103,15 @@ public class TileControl {
 
         stageControl.checkIsReached(starterTile, stageControl.getExitPoint());
 
-        /* DRAG BALL
-        ballView.setOnMousePressed(event -> {
-            oldSceneX = event.getSceneX();
-            oldSceneY = event.getSceneY();
-            oldTranslateX = ballView.getTranslateX();
-            oldTranslateY = ballView.getTranslateY();
-        });
-        ballView.setOnMouseDragged(event -> {
-            ballView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-            ballView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-        }); */
-
         centerPane.getChildren().addAll(ballView);
 
         // Check tile movements
-        relocateGrid(grid, tileViews, centerPane, stageHeight);
+        relocateGrid(grid, tileViews, stageHeight);
     }
 
-    private void relocateGrid(int[][] grid, ImageView[][] tileViews, StackPane centerPane, double stageHeight) {
+    private void relocateGrid(int[][] grid, ImageView[][] tileViews, double stageHeight) {
+        this.stageHeight = stageHeight;
+
         tileSize = stageHeight / 7;
 
         for (int r = 0; r < 4; r++) {
@@ -128,36 +120,41 @@ public class TileControl {
                 if (type != 0 && !stageControl.isLevelCompleted()) {
                     final ImageView tileView = tileViews[r][c];
 
-                    boolean canMoveLeft = false;
-                    boolean canMoveUp = false;
-                    boolean canMoveRight = false;
-                    boolean canMoveDown = false;
+                    boolean isLeftFree = false;
+                    boolean isUpFree = false;
+                    boolean isRightFree = false;
+                    boolean isDownFree = false;
 
                     if ((grid[c][r] >= 12 && grid[c][r] <= 17) || grid[c][r] == 1) {
                         try {
-                            canMoveLeft = grid[c - 1][r] == 0;
+                            isLeftFree = grid[c - 1][r] == 0;
                         } catch (ArrayIndexOutOfBoundsException e) {
-                            canMoveLeft = false;
+                            isLeftFree = false;
                         }
 
                         try {
-                            canMoveUp = grid[c][r - 1] == 0;
+                            isUpFree = grid[c][r - 1] == 0;
                         } catch (ArrayIndexOutOfBoundsException e) {
-                            canMoveUp = false;
+                            isUpFree = false;
                         }
 
                         try {
-                            canMoveRight = grid[c + 1][r] == 0;
+                            isRightFree = grid[c + 1][r] == 0;
                         } catch (ArrayIndexOutOfBoundsException e) {
-                            canMoveRight = false;
+                            isRightFree = false;
                         }
 
                         try {
-                            canMoveDown = grid[c][r + 1] == 0;
+                            isDownFree = grid[c][r + 1] == 0;
                         } catch (ArrayIndexOutOfBoundsException e) {
-                            canMoveDown = false;
+                            isDownFree = false;
                         }
                     }
+
+                    boolean canMoveLeft = isLeftFree;
+                    boolean canMoveUp = isUpFree;
+                    boolean canMoveRight = isRightFree;
+                    boolean canMoveDown = isDownFree;
 
                     final int row = r;
                     final int col = c;
@@ -169,661 +166,9 @@ public class TileControl {
                         oldTranslateY = tileView.getTranslateY();
                     });
 
-                    if (canMoveDown && canMoveRight && canMoveUp && canMoveLeft) { /* ---- ALL WAYS ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (Math.abs(event.getSceneX() - oldSceneX) > Math.abs(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
+                    tileView.setOnMouseDragged(event -> dragTile(event, tileView, canMoveUp, canMoveRight, canMoveDown, canMoveLeft));
 
-                                if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTileLR(tileView, col, row);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTileUD(tileView, col, row);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveDown && canMoveRight && canMoveLeft) { /* ---- DOWN, RIGHT, LEFT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (Math.abs(event.getSceneX() - oldSceneX) > event.getSceneY() - oldSceneY) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTileLR(tileView, col, row);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, 1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveUp && canMoveRight && canMoveLeft) { /* ---- UP, RIGHT, LEFT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (Math.abs(event.getSceneX() - oldSceneX) > -(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY > 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTileLR(tileView, col, row);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, -1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveDown && canMoveRight && canMoveUp) { /* ---- DOWN, RIGHT, UP ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX > Math.abs(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX < 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTileUD(tileView, col, row);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveDown && canMoveUp && canMoveLeft) { /* ---- DOWN, LEFT, UP ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (-(event.getSceneX() - oldSceneX) > Math.abs(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX > 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(-1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTileUD(tileView, col, row);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveRight && canMoveDown) { /* ---- DOWN, RIGHT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX > event.getSceneY() - oldSceneY) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX < 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, 1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveLeft && canMoveDown) { /* ---- DOWN, LEFT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (-(event.getSceneX() - oldSceneX) > event.getSceneY() - oldSceneY) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX > 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY < 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY > tileSize)
-                                    tileView.setTranslateY(oldTranslateY + tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(-1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, 1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveLeft && canMoveUp) { /* ---- UP, LEFT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (-(event.getSceneX() - oldSceneX) > -(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX > 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX < -tileSize)
-                                    tileView.setTranslateX(oldTranslateX - tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY > 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(-1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, -1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveRight && canMoveUp) { /* ---- UP, RIGHT ---- */
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX > -(event.getSceneY() - oldSceneY)) {
-                                tileView.setTranslateY(oldTranslateY);
-
-                                if (event.getSceneX() - oldSceneX < 0)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else if (event.getSceneX() - oldSceneX > tileSize)
-                                    tileView.setTranslateX(oldTranslateX + tileSize);
-                                else
-                                    tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                            } else {
-                                tileView.setTranslateX(oldTranslateX);
-
-                                if (event.getSceneY() - oldSceneY > 0)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else if (event.getSceneY() - oldSceneY < -tileSize)
-                                    tileView.setTranslateY(oldTranslateY - tileSize);
-                                else
-                                    tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                            }
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() == oldTranslateY) {
-                                if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
-                                    tileView.setTranslateX(oldTranslateX);
-                                else {
-                                    moveTile(1, 0, col, row, tileView);
-                                }
-                            } else if (tileView.getTranslateX() == oldTranslateX) {
-                                if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                    tileView.setTranslateY(oldTranslateY);
-                                else {
-                                    moveTile(0, -1, col, row, tileView);
-                                }
-                            }
-
-                            tileView.setOnMousePressed(null);
-                            tileView.setOnMouseDragged(null);
-                            tileView.setOnMouseReleased(null);
-
-                            try {
-                                readGrid(grid, centerPane, stageHeight);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    } else if (canMoveRight && canMoveLeft) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX < -tileSize)
-                                tileView.setTranslateX(oldTranslateX - tileSize);
-                            else if (event.getSceneX() - oldSceneX > tileSize)
-                                tileView.setTranslateX(oldTranslateX + tileSize);
-                            else
-                                tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateX() - oldTranslateX < tileSize / 2 && tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                tileView.setTranslateX(oldTranslateX);
-                            else {
-                                moveTileLR(tileView, col, row);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    } else if (canMoveDown && canMoveUp) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneY() - oldSceneY < -tileSize)
-                                tileView.setTranslateY(oldTranslateY - tileSize);
-                            else if (event.getSceneY() - oldSceneY > tileSize)
-                                tileView.setTranslateY(oldTranslateY + tileSize);
-                            else
-                                tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() - oldTranslateY < tileSize / 2 && tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                tileView.setTranslateY(oldTranslateY);
-                            else {
-                                moveTileUD(tileView, col, row);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    } else if (canMoveDown) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneY() - oldSceneY < 0)
-                                tileView.setTranslateY(oldTranslateY);
-                            else if (event.getSceneY() - oldSceneY > tileSize)
-                                tileView.setTranslateY(oldTranslateY + tileSize);
-                            else
-                                tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() - oldTranslateY < tileSize / 2)
-                                tileView.setTranslateY(oldTranslateY);
-                            else {
-                                moveTile(0, 1, col, row, tileView);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    } else if (canMoveRight) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX < 0)
-                                tileView.setTranslateX(oldTranslateX);
-                            else if (event.getSceneX() - oldSceneX > tileSize)
-                                tileView.setTranslateX(oldTranslateX + tileSize);
-                            else
-                                tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateX() - oldTranslateX < tileSize / 2)
-                                tileView.setTranslateX(oldTranslateX);
-                            else {
-                                moveTile(1, 0, col, row, tileView);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    } else if (canMoveUp) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneY() - oldSceneY > 0)
-                                tileView.setTranslateY(oldTranslateY);
-                            else if (event.getSceneY() - oldSceneY < -tileSize)
-                                tileView.setTranslateY(oldTranslateY - tileSize);
-                            else
-                                tileView.setTranslateY(oldTranslateY + event.getSceneY() - oldSceneY);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateY() - oldTranslateY > -tileSize / 2)
-                                tileView.setTranslateY(oldTranslateY);
-                            else {
-                                moveTile(0, -1, col, row, tileView);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    } else if (canMoveLeft) {
-                        tileView.setOnMouseDragged(event -> {
-                            if (event.getSceneX() - oldSceneX > 0)
-                                tileView.setTranslateX(oldTranslateX);
-                            else if (event.getSceneX() - oldSceneX < -tileSize)
-                                tileView.setTranslateX(oldTranslateX - tileSize);
-                            else
-                                tileView.setTranslateX(oldTranslateX + event.getSceneX() - oldSceneX);
-                        });
-
-                        tileView.setOnMouseReleased(event -> {
-                            if (main.isAudioOn()) {
-                                shellPlayer.stop();
-                                shellPlayer.play();
-                            }
-                            if (tileView.getTranslateX() - oldTranslateX > -tileSize / 2)
-                                tileView.setTranslateX(oldTranslateX);
-                            else {
-                                moveTile(-1, 0, col, row, tileView);
-
-                                tileView.setOnMousePressed(null);
-                                tileView.setOnMouseDragged(null);
-                                tileView.setOnMouseReleased(null);
-
-                                try {
-                                    readGrid(grid, centerPane, stageHeight);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        });
-                    }
+                    tileView.setOnMouseReleased(event -> dropTile(tileView, col, row));
                 }
             }
         }
@@ -850,8 +195,8 @@ public class TileControl {
         tileView.setTranslateY(oldTranslateY + y * tileSize);
         grid[col + x][row + y] = grid[col][row];
         grid[col][row] = 0;
-        int tileIndex = COL * row + col;
-        int targetTileIndex = tileIndex + x + y * COL;
+        int tileIndex = 4 * row + col;
+        int targetTileIndex = tileIndex + x + y * 4;
         Tile tileToMove = tiles.get(tileIndex);
         Tile targetTile = tiles.get(targetTileIndex);
         tileToMove.setX(tileToMove.getX() + x);
@@ -860,6 +205,122 @@ public class TileControl {
         targetTile.setX(targetTile.getX() - x);
         targetTile.setY(targetTile.getY() - y);
         tiles.set(tileIndex, targetTile);
+    }
+
+    private void dragTile(MouseEvent event, ImageView tileView,
+                          boolean canMoveUp, boolean canMoveRight, boolean canMoveDown, boolean canMoveLeft) {
+        double sceneX = event.getSceneX();
+        double sceneY = event.getSceneY();
+
+        boolean horizontalMovement = Math.abs(sceneX - oldSceneX) > Math.abs(sceneY - oldSceneY);
+
+        if (canMoveDown && canMoveRight && canMoveUp && canMoveLeft)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, tileSize);
+            else
+                dragOnY(tileView, sceneY, -tileSize, tileSize);
+        else if (canMoveDown && canMoveRight && canMoveLeft)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, tileSize);
+            else
+                dragOnY(tileView, sceneY, 0, tileSize);
+        else if (canMoveUp && canMoveRight && canMoveLeft)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, tileSize);
+            else
+                dragOnY(tileView, sceneY, -tileSize, 0);
+        else if (canMoveDown && canMoveRight && canMoveUp)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, 0, tileSize);
+            else
+                dragOnY(tileView, sceneY, -tileSize, tileSize);
+        else if (canMoveDown && canMoveUp && canMoveLeft)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, 0);
+            else
+                dragOnY(tileView, sceneY, -tileSize, tileSize);
+        else if (canMoveRight && canMoveDown)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, 0, tileSize);
+            else
+                dragOnY(tileView, sceneY, 0, tileSize);
+        else if (canMoveLeft && canMoveDown)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, 0);
+            else
+                dragOnY(tileView, sceneY, 0, tileSize);
+        else if (canMoveLeft && canMoveUp)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, -tileSize, 0);
+            else
+                dragOnY(tileView, sceneY, -tileSize, 0);
+        else if (canMoveRight && canMoveUp)
+            if (horizontalMovement)
+                dragOnX(tileView, sceneX, 0, tileSize);
+            else
+                dragOnY(tileView, sceneY, -tileSize, 0);
+        else if (canMoveRight && canMoveLeft) dragOnX(tileView, sceneX, -tileSize, tileSize);
+        else if (canMoveDown && canMoveUp) dragOnY(tileView, sceneY, -tileSize, tileSize);
+        else if (canMoveDown) dragOnY(tileView, sceneY, 0, tileSize);
+        else if (canMoveRight) dragOnX(tileView, sceneX, 0, tileSize);
+        else if (canMoveUp) dragOnY(tileView, sceneY, -tileSize, 0);
+        else if (canMoveLeft) dragOnX(tileView, sceneX, -tileSize, 0);
+    }
+
+    private void dragOnX(ImageView tileView, double sceneX, double leftBorder, double rightBorder) {
+        tileView.setTranslateY(oldTranslateY);
+
+        if (sceneX - oldSceneX < leftBorder)
+            tileView.setTranslateX(oldTranslateX + leftBorder);
+        else if (sceneX - oldSceneX > rightBorder)
+            tileView.setTranslateX(oldTranslateX + rightBorder);
+        else
+            tileView.setTranslateX(oldTranslateX + sceneX - oldSceneX);
+    }
+
+    private void dragOnY(ImageView tileView, double sceneY, double upBorder, double downBorder) {
+        tileView.setTranslateX(oldTranslateX);
+
+        if (sceneY - oldSceneY < upBorder)
+            tileView.setTranslateY(oldTranslateY + upBorder);
+        else if (sceneY - oldSceneY > downBorder)
+            tileView.setTranslateY(oldTranslateY + downBorder);
+        else
+            tileView.setTranslateY(oldTranslateY + sceneY - oldSceneY);
+    }
+
+    private void dropTile(ImageView tileView, int col, int row) {
+        double translateY = tileView.getTranslateY();
+        double translateX = tileView.getTranslateX();
+
+        if (translateY == oldTranslateY) {
+            if (translateX - oldTranslateX < tileSize / 2 && translateX - oldTranslateX > -tileSize / 2)
+                tileView.setTranslateX(oldTranslateX);
+            else {
+                moveTileLR(tileView, col, row);
+            }
+        } else if (translateX == oldTranslateX) {
+            if (translateY - oldTranslateY < tileSize / 2 && translateY - oldTranslateY > -tileSize / 2)
+                tileView.setTranslateY(oldTranslateY);
+            else {
+                moveTileUD(tileView, col, row);
+            }
+        }
+
+        if (main.isAudioOn()) {
+            shellPlayer.stop();
+            shellPlayer.play();
+        }
+
+        tileView.setOnMousePressed(null);
+        tileView.setOnMouseDragged(null);
+        tileView.setOnMouseReleased(null);
+
+        try {
+            readGrid(grid, centerPane, stageHeight);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public ImageView getBallView() {
