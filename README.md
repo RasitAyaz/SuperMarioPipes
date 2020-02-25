@@ -11,7 +11,7 @@ There are 16 tiles in this game’s map. Some tiles are dynamic tiles, these til
 |**Main**|
 |---|
 |- stageWidth: double<br>- stageHeight: double<br>- musicOn: boolean<br>- audioOn: boolean<br>- bgmPlayer: MediaPlayer<br>- sfxPlayer: MediaPlayer<br>- ringPlayer: MediaPlayer<br>- txtStatus: Text<br>- btNextLevel: Button<br>- ballTransition: PathTransition|
-|+ main(args: String[]): void<br>+ start(stage: Stage): void<br>+ viewMainMenu(stage: Stage): void<br>+ viewLevelsScene(stage: Stage, sceneMain: Scene): void<br>+ viewGameScene(stage: Stage, sceneMain: Scene, level: int): void<br>+ playPathTransition(): void<br>- toggleMusic(btMusic: Button, musicOffView: ImageView, musicOnView: ImageView): void<br>- toggleAudio(btAudio: Button, audioOffView: ImageView, audioOnView: ImageView): void<br>+ getters|
+|+ main(args: String[]): void<br>+ start(stage: Stage): void<br>- viewMainMenu(stage: Stage): void<br>- viewLevelsScene(stage: Stage, sceneMain: Scene): void<br>- viewGameScene(stage: Stage, sceneMain: Scene, level: int): void<br>+ playPathTransition(): void<br>- toggleMusic(btMusic: Button, musicOffView: ImageView, musicOnView: ImageView): void<br>- toggleAudio(btAudio: Button, audioOffView: ImageView, audioOnView: ImageView): void<br>+ getters|
 
 musicOn and audioOn variables are to keep settings of them.
 
@@ -62,7 +62,7 @@ relocateGrid moves tiles, after that it recalls readGrid and updates the list.
 |**StageControl**|
 |---|
 |- grid: int[][]<br>- tiles: ArrayList<Tile><br>- nextTile: Tile<br>- nextEntrance: int<br>- isReached: boolean<br>- levelCompleted: boolean<br>- level: int<br>- path: Path<br>- moveTo: MoveTo<br>- lineTo: LineTo<br>- moveTo2: MoveTo<br>- lineTo2: LineTo<br>- dungeonWinPlayer: MediaPlayer|
-|+ readStage(level: int): void<br>+ canMoveNext(currentTile: Tile, exitPoint: int): boolean<br>+ checkIsReached(currentTile: Tile, exitPoint: int): void<br>+ getTileById(id: int): Tile<br>+ getStarterTile(): Tile<br>+ createPath(tile: Tile, entrance: int): void<br>+ getExitPoint(): int<br>+ getters|
+|+ readStage(level: int): void<br>- canMoveNext(currentTile: Tile, exitPoint: int): boolean<br>+ checkIsReached(currentTile: Tile, exitPoint: int): void<br>- getTileById(id: int): Tile<br>+ getStarterTile(): Tile<br>- createPath(tile: Tile, entrance: int): void<br>+ getExitPoint(): int<br>+ getters|
 
 grid and tiles variables keep game map for each level.
 
