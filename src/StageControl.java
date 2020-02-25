@@ -1,3 +1,4 @@
+import javafx.scene.image.ImageView;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.shape.LineTo;
@@ -204,55 +205,23 @@ public class StageControl {
         else if (exitPoint == secondExit)
             nextExit = firstExit;
 
-        switch (nextExit) {
-            case 1:
-                yNext = yCurrent - 1;
-                xNext = xCurrent;
-                if ((xNext >= 0 && xNext <= 3) && (yNext >= 0 && yNext <= 3)) {
-                    nextTile = getTileById(yNext * 4 + xNext);
-                    if (nextTile.getEntranceOne() == 3 || nextTile.getEntranceTwo() == 3) {
-                        if (nextTile.getType() == 4 || nextTile.getType() == 5) isReached = true;
-                        nextEntrance = 3;
-                        return true;
-                    } else return false;
-                } else return false;
+        int yMovement = (nextExit - 2) % 2;
+        int xMovement = (5 - nextExit) % 2;
 
-            case 2:
-                yNext = yCurrent;
-                xNext = xCurrent + 1;
-                if ((xNext >= 0 && xNext <= 3) && (yNext >= 0 && yNext <= 3)) {
-                    nextTile = getTileById(yNext * 4 + xNext);
-                    if (nextTile.getEntranceOne() == 4 || nextTile.getEntranceTwo() == 4) {
-                        if (nextTile.getType() == 4 || nextTile.getType() == 5) isReached = true;
-                        nextEntrance = 4;
-                        return true;
-                    } else return false;
-                } else return false;
+        yNext = yCurrent + yMovement;
+        xNext = xCurrent + xMovement;
 
-            case 3:
-                yNext = yCurrent + 1;
-                xNext = xCurrent;
-                if ((xNext >= 0 && xNext <= 3) && (yNext >= 0 && yNext <= 3)) {
-                    nextTile = getTileById(yNext * 4 + xNext);
-                    if (nextTile.getEntranceOne() == 1 || nextTile.getEntranceTwo() == 1) {
-                        if (nextTile.getType() == 4 || nextTile.getType() == 5) isReached = true;
-                        nextEntrance = 1;
-                        return true;
-                    } else return false;
-                } else return false;
+        nextEntrance = nextExit > 2 ? nextExit - 2 : nextExit + 2;
 
-            case 4:
-                yNext = yCurrent;
-                xNext = xCurrent - 1;
-                if ((xNext >= 0 && xNext <= 3) && (yNext >= 0 && yNext <= 3)) {
-                    nextTile = getTileById(yNext * 4 + xNext);
-                    if (nextTile.getEntranceOne() == 2 || nextTile.getEntranceTwo() == 2) {
-                        if (nextTile.getType() == 4 || nextTile.getType() == 5) isReached = true;
-                        nextEntrance = 2;
-                        return true;
-                    } else return false;
-                } else return false;
+        if ((xNext >= 0 && xNext <= 3) && (yNext >= 0 && yNext <= 3)) {
+            nextTile = getTileById(yNext * 4 + xNext);
+            if (nextTile.getEntranceOne() == nextEntrance || nextTile.getEntranceTwo() == nextEntrance) {
+                int nextTileType = nextTile.getType();
+                if (nextTileType == 4 || nextTileType == 5) isReached = true;
+                return true;
+            }
         }
+
         return false;
     }
 
@@ -262,7 +231,7 @@ public class StageControl {
             if (isReached) {
                 createPath(nextTile, 0);
                 path.getElements().addAll(moveTo, lineTo);
-                main.playTransition();
+                main.playPathTransition();
                 main.getTxtStatus().setText("Congratulations! You've completed this level.");
                 main.getBtNextLv().setDisable(false);
                 levelCompleted = true;
@@ -305,86 +274,105 @@ public class StageControl {
         double tileSize = tileControl.getTileSize();
         int type = tile.getType();
 
-        double x = tileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateX() + tileSize / 8;
-        double y = tileControl.getTileViews()[tile.getY()][tile.getX()].getTranslateY() + tileSize / 8;
+        ImageView tileView = tileControl.getTileViews()[tile.getY()][tile.getX()];
+
+        double x = tileView.getTranslateX() + tileSize / 8;
+        double y = tileView.getTranslateY() + tileSize / 8;
 
         // Create path elements according to current tile type
-        if (type == 2) {
-            moveTo = new MoveTo(x, y - tileSize / 4);
-            lineTo = new LineTo(x, y + tileSize / 2);
-        } else if (type == 3) {
-            moveTo = new MoveTo(x + tileSize / 4, y);
-            lineTo = new LineTo(x - tileSize / 2, y);
-        } else if (type == 4) {
-            moveTo = new MoveTo(x, y + tileSize / 2);
-            lineTo = new LineTo(x, y - tileSize / 4);
-        } else if (type == 5) {
-            moveTo = new MoveTo(x - tileSize / 2, y);
-            lineTo = new LineTo(x + tileSize / 4, y);
-        } else if (type == 6 || type == 12) {
-            if (entrance == 1) {
-                moveTo = new MoveTo(x, y - tileSize / 2);
+        switch (type) {
+            case 2:
+                moveTo = new MoveTo(x, y - tileSize / 4);
                 lineTo = new LineTo(x, y + tileSize / 2);
-            } else if (entrance == 3) {
-                moveTo = new MoveTo(x, y + tileSize / 2);
-                lineTo = new LineTo(x, y - tileSize / 2);
-            }
-        } else if (type == 7 || type == 13) {
-            if (entrance == 4) {
-                moveTo = new MoveTo(x - tileSize / 2, y);
-                lineTo = new LineTo(x + tileSize / 2, y);
-            } else if (entrance == 2) {
-                moveTo = new MoveTo(x + tileSize / 2, y);
+                break;
+            case 3:
+                moveTo = new MoveTo(x + tileSize / 4, y);
                 lineTo = new LineTo(x - tileSize / 2, y);
-            }
-        } else if (type == 8 || type == 14) {
-            if (entrance == 1) {
-                moveTo = new MoveTo(x, y - tileSize / 2);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x - tileSize / 2, y);
-            } else if (entrance == 4) {
-                moveTo = new MoveTo(x - tileSize / 2, y);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x, y - tileSize / 2);
-            }
-        } else if (type == 9 || type == 15) {
-            if (entrance == 1) {
-                moveTo = new MoveTo(x, y - tileSize / 2);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x + tileSize / 2, y);
-            } else if (entrance == 2) {
-                moveTo = new MoveTo(x + tileSize / 2, y);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x, y - tileSize / 2);
-            }
-        } else if (type == 10 || type == 16) {
-            if (entrance == 3) {
+                break;
+            case 4:
                 moveTo = new MoveTo(x, y + tileSize / 2);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x - tileSize / 2, y);
-            } else if (entrance == 4) {
+                lineTo = new LineTo(x, y - tileSize / 4);
+                break;
+            case 5:
                 moveTo = new MoveTo(x - tileSize / 2, y);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x, y + tileSize / 2);
-            }
-        } else if (type == 11 || type == 17) {
-            if (entrance == 2) {
-                moveTo = new MoveTo(x + tileSize / 2, y);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x, y + tileSize / 2);
-            } else if (entrance == 3) {
-                moveTo = new MoveTo(x, y + tileSize / 2);
-                lineTo = new LineTo(x, y);
-                moveTo2 = new MoveTo(x, y);
-                lineTo2 = new LineTo(x + tileSize / 2, y);
-            }
+                lineTo = new LineTo(x + tileSize / 4, y);
+                break;
+            case 6:
+            case 12:
+                if (entrance == 1) {
+                    moveTo = new MoveTo(x, y - tileSize / 2);
+                    lineTo = new LineTo(x, y + tileSize / 2);
+                } else if (entrance == 3) {
+                    moveTo = new MoveTo(x, y + tileSize / 2);
+                    lineTo = new LineTo(x, y - tileSize / 2);
+                }
+                break;
+            case 7:
+            case 13:
+                if (entrance == 4) {
+                    moveTo = new MoveTo(x - tileSize / 2, y);
+                    lineTo = new LineTo(x + tileSize / 2, y);
+                } else if (entrance == 2) {
+                    moveTo = new MoveTo(x + tileSize / 2, y);
+                    lineTo = new LineTo(x - tileSize / 2, y);
+                }
+                break;
+            case 8:
+            case 14:
+                if (entrance == 1) {
+                    moveTo = new MoveTo(x, y - tileSize / 2);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x - tileSize / 2, y);
+                } else if (entrance == 4) {
+                    moveTo = new MoveTo(x - tileSize / 2, y);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x, y - tileSize / 2);
+                }
+                break;
+            case 9:
+            case 15:
+                if (entrance == 1) {
+                    moveTo = new MoveTo(x, y - tileSize / 2);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x + tileSize / 2, y);
+                } else if (entrance == 2) {
+                    moveTo = new MoveTo(x + tileSize / 2, y);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x, y - tileSize / 2);
+                }
+                break;
+            case 10:
+            case 16:
+                if (entrance == 3) {
+                    moveTo = new MoveTo(x, y + tileSize / 2);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x - tileSize / 2, y);
+                } else if (entrance == 4) {
+                    moveTo = new MoveTo(x - tileSize / 2, y);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x, y + tileSize / 2);
+                }
+                break;
+            case 11:
+            case 17:
+                if (entrance == 2) {
+                    moveTo = new MoveTo(x + tileSize / 2, y);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x, y + tileSize / 2);
+                } else if (entrance == 3) {
+                    moveTo = new MoveTo(x, y + tileSize / 2);
+                    lineTo = new LineTo(x, y);
+                    moveTo2 = new MoveTo(x, y);
+                    lineTo2 = new LineTo(x + tileSize / 2, y);
+                }
+                break;
         }
     }
 
