@@ -11,7 +11,7 @@ There are 16 tiles in this game’s map. Some tiles are dynamic tiles, these til
 |**Main**|
 |---|
 |- stageWidth: double<br>- stageHeight: double<br>- musicOn: boolean<br>- audioOn: boolean<br>- bgmPlayer: MediaPlayer<br>- sfxPlayer: MediaPlayer<br>- ringPlayer: MediaPlayer<br>- txtStatus: Text<br>- btNextLevel: Button<br>- ballTransition: PathTransition|
-|+ main(args: String[]): void<br>+ start(stage: Stage): void<br>+ mainMenu(stage: Stage): void<br>+ levels(stage: Stage, sceneMain: Scene): void<br>+ game(stage: Stage, sceneMain: Scene, level: int): void<br>+ playTransition(): void<br>- toggleMusic(btMusic: Button, musicOffView: ImageView, musicOnView: ImageView): void<br>- toggleAudio(btAudio: Button, audioOffView: ImageView, audioOnView: ImageView): void<br>+ getters|
+|+ main(args: String[]): void<br>+ start(stage: Stage): void<br>+ viewMainMenu(stage: Stage): void<br>+ viewLevelsScene(stage: Stage, sceneMain: Scene): void<br>+ viewGameScene(stage: Stage, sceneMain: Scene, level: int): void<br>+ playPathTransition(): void<br>- toggleMusic(btMusic: Button, musicOffView: ImageView, musicOnView: ImageView): void<br>- toggleAudio(btAudio: Button, audioOffView: ImageView, audioOnView: ImageView): void<br>+ getters|
 
 musicOn and audioOn variables are to keep settings of them.
 
@@ -25,9 +25,9 @@ ballTransition is the transition of the ball in the level map’s path.
 
 start method creates the stage which includes all scenes and initialize width and height of the stage by 800x600 pixels.
 
-mainMenu, levels and game methods are used to change the scene and locate panes. game method takes level variable to understand which chapter to read.
+viewMainMenu, viewLevelsScene and viewGameScene methods are used to change the scene and locate panes. game method takes level variable to understand which chapter to read.
 
-playTransition method is to play the move transition of the ball when the path is complete.
+playPathTransition method is to play the move transition of the ball when the path is complete.
 
 toggleMusic and toggleAudio methods are used to control music and audio buttons.
 
