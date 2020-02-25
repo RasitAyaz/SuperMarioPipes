@@ -41,7 +41,7 @@ Tile class keeps properties of various tiles.
 |**TileControl**|
 |---|
 |- oldSceneX: double<br>- oldSceneY: double<br>- oldTranslateX: double<br>- oldTranslateY: double<br>- tileSize: double<br>- tiles: ArrayList<Tile><br>- shellAudio: Media<br>- shellPlayer: MediaPlayer<br>- ballView: ImageView<br>- tileViews: ImageView[][]<br>- canMoveLeft: boolean<br>- canMoveTop: boolean<br>- canMoveRight: boolean<br>- canMoveBottom: boolean|
-|+ readGrid(grid: int[][], centerPane: StackPane, stageHeight: double): void<br>+ relocateGrid(grid: int[][], tileViews: ImageView[][], centerPane: StackPane, stageHeight: double): void<br>+ getters|
+|+ readGrid(grid: int[][], centerPane: StackPane, stageHeight: double): void<br>+ relocateGrid(grid: int[][], tileViews: ImageView[][], centerPane: StackPane, stageHeight: double): void<br>- moveTile(x: int, y: int, col: int, row: int,tileView: ImageView): void<br>- dragTile(event: MouseEvent,tileView: ImageView, canMoveUp, canMoveRight, canMoveDown, canMoveLeft: boolean): void<br>- dropTile(tileView: ImageView, col, row: int): void<br>+ getters|
 
 oldSceneX, oldSceneY, oldTranslateX and oldTranslateY are to keep old coordinates of the tile and the cursor when moving tiles.
 
